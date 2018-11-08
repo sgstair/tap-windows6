@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "D:\\Program Files\\Windows Kits\\10\\Include\\10.0.17134.0\\km",
+                "D:\\Program Files\\Windows Kits\\10\\Include\\10.0.17134.0\\km\\crt",
+                "D:\\Program Files\\Windows Kits\\10\\Include\\10.0.17134.0\\shared"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "TAP_DRIVER_MAJOR_VERSION=9","TAP_DRIVER_MINOR_VERSION=22","NDIS_WDM=1","NDIS_MINIPORT_DRIVER=1","NDIS620_MINIPORT=1"
+            ],
+            "intelliSenseMode": "msvc-x64"
+        }
+    ],
+    "version": 4
+}
