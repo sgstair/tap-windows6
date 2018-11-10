@@ -161,6 +161,12 @@ typedef struct _TAP_ADAPTER_CONTEXT
     // waiting to be read by user-mode application.
     TAP_PACKET_QUEUE            SendPacketQueue;
 
+    // Transmit flow control
+    KSPIN_LOCK                  FlowControlLock;
+    PNET_BUFFER_LIST            FlowControlList;
+    BOOLEAN                     FlowControlHasPackets;
+    NDIS_HANDLE                 FlowControlWorkItem;
+
     // NBL pool for making TAP receive indications.
     NDIS_HANDLE                 ReceiveNblPool;
 

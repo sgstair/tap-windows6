@@ -102,20 +102,13 @@ tapAdapterContextAllocate(
 
         adapter->MiniportAdapterHandle = MiniportAdapterHandle;
 
-        // Initialize cancel-safe IRP queue
-        tapIrpCsqInitialize(&adapter->PendingReadIrpQueue);
-
-        // Initialize TAP send packet queue.
-        tapPacketQueueInitialize(&adapter->SendPacketQueue);
-
-        // Allocate the adapter lock.
-        NdisAllocateSpinLock(&adapter->AdapterLock);
-
-        // NBL pool for making TAP receive indications.
-        NdisZeroMemory(&nblPoolParameters, sizeof(NET_BUFFER_LIST_POOL_PARAMETERS));
-
-        // Initialize event used to determine when all receive NBLs have been returned.
-        NdisInitializeEvent(&adapter->ReceiveNblInFlightCountZeroEvent);
+        adapter->FlowControlWorkItem = NdisAllocateIoWorkItem(adapter->MiniportAdapterHandle);
+        if(adapter->FlowControlWorkItem == NULL)
+        {
+            DEBUGP (("[TAP] Couldn't allocate adapter flow control work item\n"));            
+            NdisFreeMemory(adapter,0,0);
+            return NULL;
+        }
 
         nblPoolParameters.Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
         nblPoolParameters.Header.Revision = NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
@@ -126,7 +119,7 @@ tapAdapterContextAllocate(
         nblPoolParameters.fAllocateNetBuffer = TRUE;
         nblPoolParameters.PoolTag = TAP_RX_NBL_TAG;
 
-#pragma warning( suppress : 28197 )
+//#pragma warning( suppress : 28197 )
         adapter->ReceiveNblPool = NdisAllocateNetBufferListPool(
             adapter->MiniportAdapterHandle,
             &nblPoolParameters); 
@@ -134,8 +127,30 @@ tapAdapterContextAllocate(
         if (adapter->ReceiveNblPool == NULL)
         {
             DEBUGP (("[TAP] Couldn't allocate adapter receive NBL pool\n"));
+            NdisFreeIoWorkItem(adapter->FlowControlWorkItem);
             NdisFreeMemory(adapter,0,0);
+            return NULL;
         }
+
+        // Initialize cancel-safe IRP queue
+        tapIrpCsqInitialize(&adapter->PendingReadIrpQueue);
+
+        // Initialize TAP send packet queue.
+        tapPacketQueueInitialize(&adapter->SendPacketQueue);
+
+        // Initialize flow control
+        KeInitializeSpinLock(&adapter->FlowControlLock);
+
+        // Allocate the adapter lock.
+        NdisAllocateSpinLock(&adapter->AdapterLock);
+
+        // NBL pool for making TAP receive indications.
+        NdisZeroMemory(&nblPoolParameters, sizeof(NET_BUFFER_LIST_POOL_PARAMETERS));
+
+        // Initialize event used to determine when all receive NBLs have been returned.
+        NdisInitializeEvent(&adapter->ReceiveNblInFlightCountZeroEvent);
+
+
 
         // Add initial reference. Normally removed in AdapterHalt.
         adapter->RefCount = 1;
@@ -1572,6 +1587,10 @@ tapAdapterContextFree(
     }
 
     Adapter->ReceiveNblPool = NULL;
+
+    // Flow control related
+    ASSERT(Adapter->FlowControlList == NULL);
+    NdisFreeIoWorkItem(Adapter->FlowControlWorkItem);
 
     NdisFreeMemory(Adapter,0,0);
 
