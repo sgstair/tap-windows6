@@ -1105,7 +1105,7 @@ Return Value:
                 flowControlList = flowControlList->Next;
             }
             // Append new NBLs at the end of the existing list of NBLs
-            flowControlList->Next = adapter->FlowControlList;
+            flowControlList->Next = NetBufferLists;
         }
         adapter->FlowControlHasPackets = TRUE;
 
