@@ -1628,12 +1628,13 @@ Return Value:
         int address_match = 0;
         for(ULONG i=0;i<Adapter->ulMCListSize;i++)
         {
+            // Note: Counterintutive match code from this macro. 0 = match
             ETH_COMPARE_NETWORK_ADDRESSES_EQ(
                 Adapter->MCList[i], 
                 ethernetHeader->dest, 
                 &address_match);
             
-            if(address_match)
+            if(address_match == 0)
             {
                 // Address is in multicast list
                 return NDIS_PACKET_TYPE_MULTICAST | NDIS_PACKET_TYPE_ALL_MULTICAST;
@@ -1651,7 +1652,7 @@ Return Value:
             ethernetHeader->dest, 
             &address_match);
 
-        if(address_match)
+        if(address_match == 0)
         {
             return NDIS_PACKET_TYPE_DIRECTED | NDIS_PACKET_TYPE_ALL_LOCAL;    
         }
