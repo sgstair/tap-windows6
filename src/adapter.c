@@ -1597,6 +1597,81 @@ tapAdapterContextFree(
     DEBUGP (("[TAP] <-- tapAdapterContextFree\n"));
 }
 ULONG
+tapGetRawPacketFrameType(
+    __in PTAP_ADAPTER_CONTEXT    Adapter,
+    __in PVOID                   PacketBuffer
+    )
+/*++
+
+Routine Description:
+
+    Reads the network frame's destination address to determine the type
+    (broadcast, multicast, etc)
+
+    Runs at IRQL <= DISPATCH_LEVEL.
+
+Arguments:
+
+    NetBuffer                 The NB to examine
+
+Return Value:
+
+    NDIS_PACKET_TYPE_BROADCAST
+    NDIS_PACKET_TYPE_MULTICAST
+    NDIS_PACKET_TYPE_DIRECTED
+
+--*/
+{
+    PETH_HEADER ethernetHeader = (PETH_HEADER)PacketBuffer;
+    ASSERT(ethernetHeader);
+
+    if (ETH_IS_BROADCAST(ethernetHeader->dest))
+    {
+        return NDIS_PACKET_TYPE_BROADCAST;
+    }
+    else if(ETH_IS_MULTICAST(ethernetHeader->dest))
+    {
+        // Determine if packet is in multicast list or not.
+        int address_match = 0;
+        for(ULONG i=0;i<Adapter->ulMCListSize;i++)
+        {
+            ETH_COMPARE_NETWORK_ADDRESSES_EQ(
+                Adapter->MCList[i], 
+                ethernetHeader->dest, 
+                &address_match);
+            
+            if(address_match)
+            {
+                // Address is in multicast list
+                return NDIS_PACKET_TYPE_MULTICAST | NDIS_PACKET_TYPE_ALL_MULTICAST;
+            }
+        }
+        // Address is muticast, but not in multicast list.
+        return NDIS_PACKET_TYPE_ALL_MULTICAST;
+    }
+    else
+    {
+        // Determine if packet is directed to our address or not.
+        int address_match = 0;
+        ETH_COMPARE_NETWORK_ADDRESSES_EQ(
+            Adapter->CurrentAddress, 
+            ethernetHeader->dest, 
+            &address_match);
+
+        if(address_match)
+        {
+            return NDIS_PACKET_TYPE_DIRECTED | NDIS_PACKET_TYPE_ALL_LOCAL;    
+        }
+        else
+        {
+            // Directed traffic but not directed to us.
+            return NDIS_PACKET_TYPE_ALL_LOCAL;
+        }
+    }
+
+}
+
+ULONG
 tapGetNetBufferFrameType(
     __in PNET_BUFFER       NetBuffer
     )
