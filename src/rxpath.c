@@ -686,10 +686,10 @@ TapDeviceWrite(
 
             if(!(adapter->PacketFilter & NDIS_PACKET_TYPE_PROMISCUOUS))
             {
-                // Only determine the frame time if we need to check it.
-                tapGetRawPacketFrameType(
-                    adapter,
-                    Irp->AssociatedIrp.SystemBuffer);
+                // Only determine the frame type if we need to check it.
+                frameType = tapGetRawPacketFrameType(
+                                adapter,
+                                Irp->AssociatedIrp.SystemBuffer);
             }
 
             if((adapter->PacketFilter & NDIS_PACKET_TYPE_PROMISCUOUS) ||  

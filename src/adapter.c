@@ -180,7 +180,7 @@ tapReadCurrentAddress(
 
     // Read MAC parameter from registry. (NetworkAddress keyword)
     // Using NdisReadNetworkAddress is necessary.
-    // It causes NDIS to set the flags indiciating the MAC address can be changed.
+    // It causes NDIS to set a flag indicating the MAC address can be changed.
     // NdisReadNetworkAddress converts to a byte array from a string.
     NdisReadNetworkAddress(
         &status,
@@ -1589,6 +1589,7 @@ tapAdapterContextFree(
 
     DEBUGP (("[TAP] <-- tapAdapterContextFree\n"));
 }
+
 ULONG
 tapGetRawPacketFrameType(
     __in PTAP_ADAPTER_CONTEXT    Adapter,
@@ -1601,17 +1602,18 @@ Routine Description:
     Reads the network frame's destination address to determine the type
     (broadcast, multicast, etc)
 
-    Runs at IRQL <= DISPATCH_LEVEL.
-
 Arguments:
 
-    NetBuffer                 The NB to examine
+    Adapter             Adapter context structure
+    PacketBuffer        Raw packet in memory to examine
 
 Return Value:
-
-    NDIS_PACKET_TYPE_BROADCAST
-    NDIS_PACKET_TYPE_MULTICAST
-    NDIS_PACKET_TYPE_DIRECTED
+    Some combination of the NDIS Packet type bit flags
+        NDIS_PACKET_TYPE_BROADCAST
+        NDIS_PACKET_TYPE_MULTICAST
+        NDIS_PACKET_TYPE_ALL_MULTICAST
+        NDIS_PACKET_TYPE_DIRECTED
+        NDIS_PACKET_TYPE_ALL_LOCAL
 
 --*/
 {
@@ -1654,12 +1656,12 @@ Return Value:
 
         if(address_match == 0)
         {
-            return NDIS_PACKET_TYPE_DIRECTED | NDIS_PACKET_TYPE_ALL_LOCAL;    
+            return NDIS_PACKET_TYPE_DIRECTED;    
         }
         else
         {
             // Directed traffic but not directed to us.
-            return NDIS_PACKET_TYPE_ALL_LOCAL;
+            return 0;
         }
     }
 
