@@ -710,8 +710,6 @@ Return Value:
         break;
     }
 
-End:
-
     //
     // Finish the I/O operation by simply completing the packet and returning
     // the same status as in the packet itself.
@@ -1084,12 +1082,6 @@ Return Value:
     inBufLength = irpSp->Parameters.DeviceIoControl.InputBufferLength;
     outBufLength = irpSp->Parameters.DeviceIoControl.OutputBufferLength;
 
-    if (!inBufLength || !outBufLength)
-    {
-        ntStatus = STATUS_INVALID_PARAMETER;
-        goto End;
-    }
-
     //
     // Determine which I/O control code was specified.
     //
@@ -1109,8 +1101,6 @@ Return Value:
         ntStatus = STATUS_INVALID_DEVICE_REQUEST;
         break;
     }
-
-End:
 
     //
     // Finish the I/O operation by simply completing the packet and returning
