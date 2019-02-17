@@ -530,6 +530,12 @@ tapAdapterContextFromDeviceObject(
 {
     LOCK_STATE_EX           lockState;
 
+    if(DeviceObject == NULL)
+    {
+        // Null DeviceObject could match a DiagDeviceObject if TapDiag is disabled.
+        return (PTAP_ADAPTER_CONTEXT )NULL;
+    }
+
     // Acquire global adapter list lock.
     NdisAcquireRWLockRead(
         GlobalData.Lock,
@@ -546,8 +552,9 @@ tapAdapterContextFromDeviceObject(
         {
             adapter = CONTAINING_RECORD(entry, TAP_ADAPTER_CONTEXT, AdapterListLink);
 
-            // Match on DeviceObject
-            if(adapter->DeviceObject == DeviceObject )
+            // Match on DeviceObject or DiagDeviceObject
+            if(adapter->DeviceObject == DeviceObject ||
+               adapter->DiagDeviceObject == DeviceObject)
             {
                 // Add reference to adapter context.
                 tapAdapterContextReference(adapter);
@@ -663,7 +670,7 @@ AdapterCreate(
         //
         // Default priority behavior
         //
-        adapter->PriorityBehavior = TAP_PRIORITY_BEHAVIOR_ENABLED;
+        adapter->PriorityBehavior = TAP_PRIORITY_BEHAVIOR_NOPRIORITY;
 
         //
         // Set the registration attributes.
@@ -858,6 +865,8 @@ AdapterCreate(
         if(adapter != NULL)
         {
             DEBUGP (("[TAP] Miniport State: Halted\n"));
+
+            DestroyTapDevice(adapter);
 
             //
             // Remove reference when adapter context was allocated
